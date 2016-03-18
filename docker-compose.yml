@@ -1,0 +1,4 @@
+api-core:
+  build: ./core-api
+  ports:
+    - "8080:5000"
