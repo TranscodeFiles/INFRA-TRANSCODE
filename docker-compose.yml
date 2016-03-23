@@ -4,3 +4,9 @@ api-core:
     - ./core-api/app:/deploy/app
   ports:
     - "8080:5000"
+
+worker:
+  build: ./core-api
+  entrypoint:
+    - /docker-entrypoint.sh
+    - worker
