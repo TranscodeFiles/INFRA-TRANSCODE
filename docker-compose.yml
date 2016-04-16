@@ -1,38 +1,57 @@
-rabbitmq-master:
-  image: rabbitmq
-  environment:
-    #- RABBITMQ_DEFAULT_PASS=mypass
-    - RABBITMQ_ERLANG_COOKIE='secret cookie here'
-  ports:
-    - "5672:5672"
-    - "15672:15672"
+version: "2"
+services:
 
-#rabbitmq-worker:
- # image: rabbitmq
- # environment:
-    #- RABBITMQ_DEFAULT_PASS=mypass
- #   - RABBITMQ_ERLANG_COOKIE='secret cookie here'
- #   - CLUSTER_WITH=rabbitmq-master_1
- # links:
- #   - rabbitmq-master
- # ports:
- #   - "15673:15672"
+  #######################################################
+  ####################### CORE ##########################
+  #######################################################
+  rabbitmq-master:
+    image: rabbitmq
+    environment:
+      #- RABBITMQ_DEFAULT_PASS=mypass
+      - RABBITMQ_ERLANG_COOKIE='secret cookie here'
+    ports:
+      - "5672:5672"
+      - "15672:15672"
 
-api-core:
-  build: ./core-api
-  links:
-    - rabbitmq-master:rabbit
-  volumes: 
-    - ./core-api/app:/deploy/app
-  ports:
-    - "8080:5000"
+  api-core:
+    build: ./core/core-api
+    links:
+      - rabbitmq-master:rabbit
+    volumes: 
+      - ./core/core-api/app:/deploy/app
+    ports:
+      - "5001:5001"
 
-worker:
-  build: ./core-api
-  links:
-    - rabbitmq-master:rabbit
-  volumes: 
-    - ./core-api/app:/deploy/app
-  entrypoint:
-    - /docker-entrypoint.sh
-    - worker
+  worker:
+    build: ./core/core-api
+    restart: allways
+    links:
+      - rabbitmq-master:rabbit
+    volumes: 
+      - ./core/core-api/app:/deploy/app
+    entrypoint:
+      - /docker-entrypoint.sh
+      - worker
+
+  #######################################################
+  ####################### WEB ##########################
+  #######################################################
+  web:
+    image: vincentchalamon/symfony 
+    ports:
+      - 8080:80
+    volumes:
+      - ./web/app:/var/www
+    tty: true
+    links:
+      - mariadb
+      
+  mariadb:
+    image: mariadb 
+    volumes:
+      - ./web/mariadb:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: app 
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: my-secret-pw
