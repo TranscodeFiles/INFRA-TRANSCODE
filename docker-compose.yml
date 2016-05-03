@@ -4,29 +4,61 @@ services:
   #######################################################
   ####################### CORE ##########################
   #######################################################
-  rabbitmq-master:
-    image: rabbitmq
-    environment:
-      #- RABBITMQ_DEFAULT_PASS=mypass
-      - RABBITMQ_ERLANG_COOKIE='secret cookie here'
+  rabbit1:
+    image: bijukunjummen/rabbitmq-server
+    hostname: rabbit1
     ports:
       - "5672:5672"
       - "15672:15672"
 
+  rabbit2:
+    image: bijukunjummen/rabbitmq-server
+    hostname: rabbit2
+    links:
+      - rabbit1
+    environment:
+      - CLUSTERED=true
+      - CLUSTER_WITH=rabbit1
+      - RAM_NODE=true
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+
+  rabbit3:
+    image: bijukunjummen/rabbitmq-server
+    hostname: rabbit3
+    links:
+      - rabbit1
+      - rabbit2
+    environment:
+      - CLUSTERED=true
+      - CLUSTER_WITH=rabbit1
+    ports:
+      - "5674:5672"
+
   api-core:
     build: ./core/core-api
     links:
-      - rabbitmq-master:rabbit
+      - rabbit1:rabbit
     volumes: 
       - ./core/core-api/app:/deploy/app
+#    ports:
+ #     - "5001:5001"
+
+  lb-core:
+    image: dockercloud/haproxy
+    links:
+      - api-core
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - "5001:5001"
+      - 5000:80
 
   worker:
     build: ./core/core-api
     restart: allways
     links:
-      - rabbitmq-master:rabbit
+      - rabbit1:rabbit
     volumes: 
       - ./core/core-api/app:/deploy/app
     entrypoint:
@@ -38,8 +70,6 @@ services:
   #######################################################
   web:
     image: vincentchalamon/symfony 
-    ports:
-      - 8080:80
     volumes:
       - ./web/app:/var/www
     tty: true
@@ -48,10 +78,23 @@ services:
       
   mariadb:
     image: mariadb 
+    restart: allways
     volumes:
       - ./web/mariadb:/var/lib/mysql
     environment:
-      MYSQL_DATABASE: app 
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: app_transcode
       MYSQL_USER: root
       MYSQL_PASSWORD: root
-      MYSQL_ROOT_PASSWORD: my-secret-pw
+      TERM: dumb
+
+  lb-web:
+    image: dockercloud/haproxy
+    links:
+      - web
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 8080:80
+      - 1936:1936
+
