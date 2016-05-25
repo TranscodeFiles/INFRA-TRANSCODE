@@ -117,7 +117,7 @@ services:
   ###################### GLOBAL #########################
   #######################################################
   ceph:
-    image: ceph
+    image: ceph/demo 
     volumes:
       - ./ceph/:/etc/ceph
     network_mode: "host"
