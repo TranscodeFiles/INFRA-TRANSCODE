@@ -14,7 +14,7 @@ services:
   rabbit2:
     image: bijukunjummen/rabbitmq-server
     hostname: rabbit2
-    links:
+    depends_on:
       - rabbit1
     environment:
       - CLUSTERED=true
@@ -27,7 +27,7 @@ services:
   rabbit3:
     image: bijukunjummen/rabbitmq-server
     hostname: rabbit3
-    links:
+    depends_on:
       - rabbit1
       - rabbit2
     environment:
@@ -40,10 +40,10 @@ services:
     build: ./core/core-api
     links:
       - rabbit1:rabbit
+    depends_on:
+      - rabbit1
     volumes: 
       - ./core/core-api/app:/deploy/app
-#    ports:
- #     - "5001:5001"
 
   lb-core:
     image: dockercloud/haproxy
@@ -59,6 +59,8 @@ services:
     restart: allways
     links:
       - rabbit1:rabbit
+    depends_on:
+      - rabbit1
     volumes: 
       - ./core/core-api/app:/deploy/app
     entrypoint:
@@ -69,13 +71,13 @@ services:
   ####################### WEB ##########################
   #######################################################
   web:
-    image: vincentchalamon/symfony 
+    build: ./web/app
+    restart: allways
     volumes:
-      - ./web/app:/var/www
-    tty: true
-    links:
+      - ./web/app:/var/www/html
+    depends_on:
       - mariadb
-      
+
   mariadb:
     image: mariadb 
     restart: allways
@@ -88,9 +90,22 @@ services:
       MYSQL_PASSWORD: root
       TERM: dumb
 
+  composer: 
+    build: ./web/app
+    volumes: 
+      - ./web/app:/var/www/html
+    depends_on:
+      - mariadb
+      - web
+    entrypoint:
+      - /entrypoint.sh
+      - composer
+
   lb-web:
     image: dockercloud/haproxy
     links:
+      - web
+    depends_on:
       - web
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -98,3 +113,15 @@ services:
       - 8080:80
       - 1936:1936
 
+  #######################################################
+  ###################### GLOBAL #########################
+  #######################################################
+  ceph:
+    image: ceph
+    volumes:
+      - ./ceph/:/etc/ceph
+    network_mode: "host"
+    environment:
+      - MON_IP=10.0.2.15
+      - CEPH_NETWORK=10.0.2.0/24
+    
