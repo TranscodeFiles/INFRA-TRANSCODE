@@ -53,6 +53,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - 5000:80
+      - 1936:1936
 
   worker:
     build: ./core/core-api
@@ -77,6 +78,7 @@ services:
       - ./web/app:/var/www/html
     depends_on:
       - mariadb
+      - init-web
 
   mariadb:
     image: mariadb 
@@ -90,16 +92,15 @@ services:
       MYSQL_PASSWORD: root
       TERM: dumb
 
-  composer: 
+  init-web: 
     build: ./web/app
     volumes: 
       - ./web/app:/var/www/html
     depends_on:
       - mariadb
-      - web
     entrypoint:
       - /entrypoint.sh
-      - composer
+      - init
 
   lb-web:
     image: dockercloud/haproxy
@@ -111,7 +112,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - 8080:80
-      - 1936:1936
 
   #######################################################
   ###################### GLOBAL #########################
