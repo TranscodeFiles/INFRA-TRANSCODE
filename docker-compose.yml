@@ -83,8 +83,6 @@ services:
   mariadb:
     image: mariadb 
     restart: allways
-    volumes:
-      - ./web/mariadb:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: app_transcode
