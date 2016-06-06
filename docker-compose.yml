@@ -57,7 +57,7 @@ services:
 
   worker:
     build: ./core/core-api
-    restart: allways
+    restart: always
     links:
       - rabbit1:rabbit
     depends_on:
@@ -73,7 +73,7 @@ services:
   #######################################################
   web:
     build: ./web/app
-    restart: allways
+    restart: always
     volumes:
       - ./web/app:/var/www/html
     depends_on:
@@ -82,7 +82,9 @@ services:
 
   mariadb:
     image: mariadb 
-    restart: allways
+    restart: always
+    volumes:
+      - ./web/mariadb:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: app_transcode
@@ -115,9 +117,10 @@ services:
   ###################### GLOBAL #########################
   #######################################################
   ceph:
-    image: ceph/demo 
+    image: ceph/demo
     volumes:
-      - ./ceph/:/etc/ceph
+      - ./ceph/etc/:/etc/ceph
+      - ./ceph/lib/:/var/lib/ceph
     network_mode: "host"
     environment:
       - MON_IP=10.0.2.15
