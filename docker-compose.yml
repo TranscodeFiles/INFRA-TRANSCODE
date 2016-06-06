@@ -1,4 +1,18 @@
 version: "2"
+
+networks:
+  swarm-network:
+    driver: overlay
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.10.2.0/16
+          ip_range: 10.10.2.0/24
+
+volumes:
+  transcoding:
+    driver: local
+
 services:
 
   #######################################################
