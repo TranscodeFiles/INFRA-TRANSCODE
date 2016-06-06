@@ -1,1 +1,0 @@
-{"virtualbox":{"/vagrant":{"mount_options":["dmode=777,fmode=777"],"guestpath":"/vagrant","hostpath":"C:/Users/etienne/MEGA/swarm/docker-swarm","disabled":false},"/mnt":{"mount_options":["dmode=777,fmode=777"],"guestpath":"/mnt","hostpath":"C:/Users/etienne/MEGA/swarm/docker-swarm/mnt","disabled":false}}}
