@@ -14,7 +14,7 @@ services:
   rabbit2:
     image: bijukunjummen/rabbitmq-server
     hostname: rabbit2
-    links:
+    depends_on:
       - rabbit1
     environment:
       - CLUSTERED=true
@@ -27,7 +27,7 @@ services:
   rabbit3:
     image: bijukunjummen/rabbitmq-server
     hostname: rabbit3
-    links:
+    depends_on:
       - rabbit1
       - rabbit2
     environment:
@@ -40,10 +40,10 @@ services:
     build: ./core/core-api
     links:
       - rabbit1:rabbit
+    depends_on:
+      - rabbit1
     volumes: 
       - ./core/core-api/app:/deploy/app
-#    ports:
- #     - "5001:5001"
 
   lb-core:
     image: dockercloud/haproxy
@@ -53,12 +53,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - 5000:80
+      - 1936:1936
 
   worker:
     build: ./core/core-api
-    restart: allways
+    restart: always
     links:
       - rabbit1:rabbit
+    depends_on:
+      - rabbit1
     volumes: 
       - ./core/core-api/app:/deploy/app
     entrypoint:
@@ -69,16 +72,17 @@ services:
   ####################### WEB ##########################
   #######################################################
   web:
-    image: vincentchalamon/symfony 
+    build: ./web/app
+    restart: always
     volumes:
-      - ./web/app:/var/www
-    tty: true
-    links:
+      - ./web/app:/var/www/html
+    depends_on:
       - mariadb
-      
+      - init-web
+
   mariadb:
     image: mariadb 
-    restart: allways
+    restart: always
     volumes:
       - ./web/mariadb:/var/lib/mysql
     environment:
@@ -88,13 +92,37 @@ services:
       MYSQL_PASSWORD: root
       TERM: dumb
 
+  init-web: 
+    build: ./web/app
+    volumes: 
+      - ./web/app:/var/www/html
+    depends_on:
+      - mariadb
+    entrypoint:
+      - /entrypoint.sh
+      - init
+
   lb-web:
     image: dockercloud/haproxy
     links:
+      - web
+    depends_on:
       - web
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - 8080:80
-      - 1936:1936
 
+  #######################################################
+  ###################### GLOBAL #########################
+  #######################################################
+  ceph:
+    image: ceph/demo
+    volumes:
+      - ./ceph/etc/:/etc/ceph
+      - ./ceph/lib/:/var/lib/ceph
+    network_mode: "host"
+    environment:
+      - MON_IP=10.0.2.15
+      - CEPH_NETWORK=10.0.2.0/24
+    
